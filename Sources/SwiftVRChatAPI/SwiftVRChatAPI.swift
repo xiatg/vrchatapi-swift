@@ -30,7 +30,13 @@ public class APIClient {
         self.updateCookies()
     }
     
+    public init(configuration: Configuration, auth: String, twoFactorAuth: String) {
+        self.configuration = configuration
+        self.cookies = ["auth": auth, "twoFactorAuth": twoFactorAuth, "apiKey": nil]
+    }
+    
     public func updateCookies() {
+        self.cookies = ["auth": nil, "twoFactorAuth": nil, "apiKey": nil]
         for cookie in HTTPCookieStorage.shared.cookies(for: URL(string: domainUrl)!)! {
             if (cookie.name == "auth" || cookie.name == "twoFactorAuth" || cookie.name == "apiKey") {
                 self.cookies[cookie.name] = cookie.value
@@ -85,6 +91,7 @@ public class AuthenticationAPI {
         request.httpMethod = "GET"
         
         request.addValue("twoFactorAuth=\(client.cookies["twoFactorAuth"]! ?? "twoFactorAuth"); auth=\(client.cookies["auth"]! ?? "auth")", forHTTPHeaderField: "Cookie")
+        
         let authData = (client.configuration.username + ":" + client.configuration.password).data(using: .utf8)!.base64EncodedString()
         request.addValue("Basic \(authData)", forHTTPHeaderField: "Authorization")
         
@@ -102,13 +109,11 @@ public class AuthenticationAPI {
                 userInfo = try JSONDecoder().decode(UserInfo.self, from: data)
             } catch let error {
                 do {
-                    let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String : Any]
                     print(error.localizedDescription)
-                    print(json)
-                    print(response)
-                    print(error)
+                    
+                    let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String : Any]
+                    print(json!)
                 } catch let error {
-                    print("ERROR MSG")
                     print(error.localizedDescription)
                 }
             }
@@ -137,11 +142,8 @@ public class AuthenticationAPI {
             
             do {
                 let json = try JSONSerialization.jsonObject(with: data!, options: []) as? [String : Any]
-                print(json)
-                print(response)
-                print(error)
+                print(json!)
             } catch let error {
-                print("ERROR MSG")
                 print(error.localizedDescription)
             }
 
@@ -191,13 +193,11 @@ public class AuthenticationAPI {
                 verifyResponse = try JSONDecoder().decode(VerifyResponse.self, from: data)
             } catch let error {
                 do {
-                    let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String : Any]
                     print(error.localizedDescription)
-                    print(json)
-                    print(response)
-                    print(error)
+                    
+                    let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String : Any]
+                    print(json!)
                 } catch let error {
-                    print("ERROR MSG")
                     print(error.localizedDescription)
                 }
             }
