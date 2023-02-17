@@ -7,17 +7,22 @@
 
 import Foundation
 
-let baseUrl = "https://api.vrchat.cloud/api/1"
+public let baseUrl = "https://api.vrchat.cloud/api/1"
 
 public struct Configuration {
-    var username: String
-    var password: String
+    public var username: String
+    public var password: String
+    
+    public init(username: String, password: String) {
+        self.username = username
+        self.password = password
+    }
 }
 
 public class APIClient {
-    var configuration: Configuration
+    public var configuration: Configuration
     
-    init(configuration: Configuration) {
+    public init(configuration: Configuration) {
         self.configuration = configuration
     }
     
