@@ -7,7 +7,8 @@
 
 import Foundation
 
-public let baseUrl = "https://api.vrchat.cloud/api/1"
+let domainUrl = "https://api.vrchat.cloud"
+let baseUrl = "https://api.vrchat.cloud/api/1"
 
 public struct Configuration {
     public var username: String
@@ -21,86 +22,192 @@ public struct Configuration {
 
 public class APIClient {
     public var configuration: Configuration
-    
+    public var cookies: [String:String?]
+
     public init(configuration: Configuration) {
         self.configuration = configuration
+        self.cookies = ["auth": nil, "twoFactorAuth": nil, "apiKey": nil]
+        self.updateCookies()
     }
     
+    public func updateCookies() {
+        for cookie in HTTPCookieStorage.shared.cookies(for: URL(string: domainUrl)!)! {
+            if (cookie.name == "auth" || cookie.name == "twoFactorAuth" || cookie.name == "apiKey") {
+                self.cookies[cookie.name] = cookie.value
+            }
+        }
+    }
+
 }
 
 public class AuthenticationAPI {
     let authUrl = "\(baseUrl)/auth"
+    let auth2FAUrl = "\(baseUrl)/auth/twofactorauth"
     
-    var APIClient: APIClient
+    public var client: APIClient
     
-    init(APIClient: APIClient) {
-        self.APIClient = APIClient
+    public init(client: APIClient) {
+        self.client = client
     }
     
-    struct UserInfo: Codable {
-        let requiresTwoFactorAuth: [String]?
+    public struct UserInfo: Codable {
+        public let requiresTwoFactorAuth: [String]?
         
-        let id: String?
-        let displayName: String?
-        let userIcon: String?
-        let bio: String?
-        let bioLinks: String?
-        
-        let username: String?
-        
-        let friends: [String]?
-        
-        let currentAvatar: String?
-        let currentAvatarImageUrl: String?
-        let currentAvatarThumbnailImageUrl: String?
-        let currentAvatarAssetUrl: String?
-        
-        let state: String?
-        
-        let tags: [String]?
-        
-        let status: String?
-        
-        let onlineFriends: [String]?
-        let activeFriends: [String]?
-        let offlineFriends: [String]?
+        public let id: String?
+        public let displayName: String?
+        public let userIcon: String?
+        public let bio: String?
+        public let bioLinks: [String]?
+
+        public let friends: [String]?
+
+        public let currentAvatar: String?
+        public let currentAvatarAssetUrl: String?
+        public let currentAvatarImageUrl: String?
+        public let currentAvatarThumbnailImageUrl: String?
+
+        public let state: String?
+        public let status: String?
+
+        public let tags: [String]?
+
+        public let onlineFriends: [String]?
+        public let activeFriends: [String]?
+        public let offlineFriends: [String]?
         
     }
     
-    func login() -> UserInfo? {
+    public func loginUserInfo() -> UserInfo? {
         let url = URL(string: "\(authUrl)/user")!
+        let sem = DispatchSemaphore(value: 0)
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         
-        let authData = (APIClient.configuration.username + ":" + APIClient.configuration.password).data(using: .utf8)!.base64EncodedString()
+        request.addValue("twoFactorAuth=\(client.cookies["twoFactorAuth"]! ?? "twoFactorAuth"); auth=\(client.cookies["auth"]! ?? "auth")", forHTTPHeaderField: "Cookie")
+        let authData = (client.configuration.username + ":" + client.configuration.password).data(using: .utf8)!.base64EncodedString()
         request.addValue("Basic \(authData)", forHTTPHeaderField: "Authorization")
         
         var userInfo: UserInfo?
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             
-            print(data)
-            print(response)
-            print(error)
+            defer { sem.signal() }
+            
+            guard let data = data, error == nil else {
+                return
+            }
+        
+            do {
+                userInfo = try JSONDecoder().decode(UserInfo.self, from: data)
+            } catch let error {
+                do {
+                    let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String : Any]
+                    print(error.localizedDescription)
+                    print(json)
+                    print(response)
+                    print(error)
+                } catch let error {
+                    print("ERROR MSG")
+                    print(error.localizedDescription)
+                }
+            }
+
+        }.resume()
+        
+        sem.wait()
+        
+        client.updateCookies()
+        
+        return userInfo
+    }
+    
+    public func logout() -> Bool? {
+        let url = URL(string: "\(baseUrl)/logout")!
+        let sem = DispatchSemaphore(value: 0)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        
+        request.addValue("auth=\(client.cookies["auth"]! ?? "auth")", forHTTPHeaderField: "Cookie")
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            
+            defer { sem.signal() }
+            
+            do {
+                let json = try JSONSerialization.jsonObject(with: data!, options: []) as? [String : Any]
+                print(json)
+                print(response)
+                print(error)
+            } catch let error {
+                print("ERROR MSG")
+                print(error.localizedDescription)
+            }
+
+        }.resume()
+        
+        sem.wait()
+        
+        client.updateCookies()
+        
+        return true
+    }
+    
+    
+    
+    struct VerifyResponse: Codable {
+        let verified: Bool
+    }
+    
+    public func verify2FAEmail(emailOTP: String) -> Bool? {
+        let url = URL(string: "\(auth2FAUrl)/emailotp/verify")!
+        let sem = DispatchSemaphore(value: 0)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        
+        let emailOTPWrapper = ["code" : emailOTP]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: emailOTPWrapper, options: .prettyPrinted)
+        } catch let error {
+            print(error.localizedDescription)
+        }
+        
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        var verifyResponse: VerifyResponse?
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            
+            defer { sem.signal() }
             
             guard let data = data, error == nil else {
                 return
             }
             
-            guard let httpUrlResponse = response as? HTTPURLResponse else {
-                return
-            }
-            
-            switch (httpUrlResponse.statusCode) {
-            case 200:
-                userInfo = try? JSONDecoder().decode(UserInfo.self, from: data)
-            default:
-                return
+            do {
+                verifyResponse = try JSONDecoder().decode(VerifyResponse.self, from: data)
+            } catch let error {
+                do {
+                    let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String : Any]
+                    print(error.localizedDescription)
+                    print(json)
+                    print(response)
+                    print(error)
+                } catch let error {
+                    print("ERROR MSG")
+                    print(error.localizedDescription)
+                }
             }
             
         }.resume()
         
-        return userInfo
+        sem.wait()
+        
+        client.updateCookies()
+        
+        return verifyResponse?.verified
     }
 }
