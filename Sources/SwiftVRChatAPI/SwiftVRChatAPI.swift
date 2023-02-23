@@ -16,6 +16,10 @@ public class APIClient {
     public var cookies: [String : String?] = ["auth": nil, "twoFactorAuth": nil, "apiKey": nil]
 
     
+    public init() {
+        
+    }
+    
     public init(username: String, password: String) {
         self.username = username
         self.password = password
