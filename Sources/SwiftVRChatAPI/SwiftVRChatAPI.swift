@@ -7,204 +7,246 @@
 
 import Foundation
 
+//
+// MARK: General Model
+//
+
 let domainUrl = "https://api.vrchat.cloud"
 let baseUrl = "https://api.vrchat.cloud/api/1"
 
+
+public struct User: Codable {
+    public let requiresTwoFactorAuth: [String]?
+    
+    public let id: String?
+    public let displayName: String?
+    public let username: String?
+    public let userIcon: String?
+    public let bio: String?
+    public let bioLinks: [String]?
+
+    public let friends: [String]?
+
+    public let currentAvatar: String?
+    public let currentAvatarAssetUrl: String?
+    public let currentAvatarImageUrl: String?
+    public let currentAvatarThumbnailImageUrl: String?
+
+    public let state: String?
+    public let status: String?
+
+    public let tags: [String]?
+
+    public let onlineFriends: [String]?
+    public let activeFriends: [String]?
+    public let offlineFriends: [String]?
+    
+}
+
+//
+// MARK: API Helper
+//
+
+func decode<T:Codable>(data: Data) -> T? {
+    
+    //Debug
+//    print("*** decode() ***")
+//    do {
+//        let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String : Any]
+//        print(json!)
+//    } catch let error {
+//        print(error.localizedDescription)
+//    }
+    //Debug End
+    
+    do {
+        return try JSONDecoder().decode(T.self, from: data)
+    } catch let error {
+        print(error.localizedDescription)
+        return nil
+    }
+}
+
+//
+// MARK: API Client
+//
+
 public class APIClient {
-    public var username: String?
-    public var password: String?
-    public var cookies: [String : String?] = ["auth": nil, "twoFactorAuth": nil, "apiKey": nil]
+    private var username: String?
+    private var password: String?
+    
+    // Cookies
+    private var auth: String?
+    private var twoFactorAuth: String?
+    private var apiKey: String?
 
     
-    public init() {
-        
-    }
+    public init() {}
     
     public init(username: String, password: String) {
         self.username = username
         self.password = password
     }
     
-    public init(auth: String?, twoFactorAuth: String?, apiKey: String?) {
-        self.cookies["auth"] = auth
-        self.cookies["twoFactorAuth"] = twoFactorAuth
-        self.cookies["apiKey"] = apiKey
-    }
-    
     public func updateCookies() {
-        self.cookies = ["auth": nil, "twoFactorAuth": nil, "apiKey": nil]
+        self.auth = nil
+        self.twoFactorAuth = nil
+        self.apiKey = nil
         for cookie in HTTPCookieStorage.shared.cookies(for: URL(string: domainUrl)!)! {
-            if (cookie.name == "auth" || cookie.name == "twoFactorAuth" || cookie.name == "apiKey") {
-                self.cookies[cookie.name] = cookie.value
+            if (cookie.name == "auth") {
+                self.auth = cookie.value
+            } else if (cookie.name == "twoFactorAuth") {
+                self.twoFactorAuth = cookie.value
+            } else if (cookie.name == "apiKey") {
+                self.apiKey = cookie.value
             }
         }
+        
+        //Debug
+//        print("*** updateCookies() ***")
+//        print("auth: \(auth)")
+//        print("twoFactorAuth: \(twoFactorAuth)")
+//        print("apiKey: \(apiKey)")
+        //Debug End
     }
-
+    
+    func VRChatRequest(url: URL,
+                       httpMethod: String,
+                       authorization: Bool = false,
+                       auth: Bool = false, twoFactorAuth: Bool = false, apiKey: Bool = false,
+                       contentType: String? = nil,
+                       httpBody: Data? = nil,
+                       completionHandler: @escaping @Sendable (Data?, URLResponse?, Error?) -> Void) {
+        var request = URLRequest(url: url)
+        request.httpMethod = httpMethod
+        
+        // Authorization
+        if authorization {
+            let authData = ((username ?? "") + ":" + (password ?? "")).data(using: .utf8)!.base64EncodedString()
+            request.addValue("Basic \(authData)", forHTTPHeaderField: "Authorization")
+        }
+        
+        // Cookie
+        var cookie = ""
+        if auth {
+            cookie.append("auth=\(self.auth ?? "auth"); ")
+//            request.addValue("auth=\(self.auth ?? "auth")", forHTTPHeaderField: "Cookie")
+        }
+        if twoFactorAuth {
+            cookie.append("twoFactorAuth=\(self.twoFactorAuth ?? "twoFactorAuth"); ")
+//            request.addValue("twoFactorAuth=\(self.twoFactorAuth ?? "twoFactorAuth")", forHTTPHeaderField: "Cookie")
+        }
+        if apiKey {
+            cookie.append("apiKey=\(self.apiKey ?? "apiKey"); ")
+//            request.addValue("apiKey=\(self.apiKey ?? "apiKey")", forHTTPHeaderField: "Cookie")
+        }
+        request.addValue(cookie, forHTTPHeaderField: "Cookie")
+        
+        //Debug
+//        print("*** VRChatRequest() ***")
+//        print(request.allHTTPHeaderFields)
+        //Debug End
+        
+        // HTTP Body
+        if let contentType = contentType, let httpBody = httpBody {
+            request.addValue(contentType, forHTTPHeaderField: "Content-Type")
+            request.httpBody = httpBody
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            completionHandler(data, response, error)
+        }.resume()
+    }
 }
 
-public class AuthenticationAPI {
-    let authUrl = "\(baseUrl)/auth"
-    let auth2FAUrl = "\(baseUrl)/auth/twofactorauth"
+
+//
+// MARK: Authentication API
+//
+
+public struct AuthenticationAPI {
+    static let authUrl = "\(baseUrl)/auth"
+    static let auth2FAUrl = "\(baseUrl)/auth/twofactorauth"
     
-    public var client: APIClient
-    
-    public init(client: APIClient) {
-        self.client = client
-    }
-    
-    public struct UserInfo: Codable {
-        public let requiresTwoFactorAuth: [String]?
-        
-        public let id: String?
-        public let displayName: String?
-        public let username: String?
-        public let userIcon: String?
-        public let bio: String?
-        public let bioLinks: [String]?
-
-        public let friends: [String]?
-
-        public let currentAvatar: String?
-        public let currentAvatarAssetUrl: String?
-        public let currentAvatarImageUrl: String?
-        public let currentAvatarThumbnailImageUrl: String?
-
-        public let state: String?
-        public let status: String?
-
-        public let tags: [String]?
-
-        public let onlineFriends: [String]?
-        public let activeFriends: [String]?
-        public let offlineFriends: [String]?
-        
-    }
-    
-    public func loginUserInfo() -> UserInfo? {
+    public static func loginUserInfo(client: APIClient, completionHandler: @escaping @Sendable (User?) -> Void) {
         let url = URL(string: "\(authUrl)/user")!
-        let sem = DispatchSemaphore(value: 0)
         
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        
-        request.addValue("twoFactorAuth=\(client.cookies["twoFactorAuth"]! ?? "twoFactorAuth"); auth=\(client.cookies["auth"]! ?? "auth")", forHTTPHeaderField: "Cookie")
-        
-        let authData = ((client.username ?? "") + ":" + (client.password ?? "")).data(using: .utf8)!.base64EncodedString()
-        request.addValue("Basic \(authData)", forHTTPHeaderField: "Authorization")
-        
-        var userInfo: UserInfo?
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            
-            defer { sem.signal() }
-            
-            guard let data = data, error == nil else {
-                return
-            }
-        
-            do {
-                userInfo = try JSONDecoder().decode(UserInfo.self, from: data)
-            } catch let error {
-                do {
-                    print(error.localizedDescription)
-                    
-                    let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String : Any]
-                    print(json!)
-                } catch let error {
-                    print(error.localizedDescription)
-                }
-            }
+        client.VRChatRequest(url: url,
+                             httpMethod: "GET",
+                             authorization: true,
+                             auth: true,
+                             twoFactorAuth: true) { data, response, error in
+            guard let data = data, error == nil else { return }
 
-        }.resume()
-        
-        sem.wait()
-        
-        client.updateCookies()
-        
-        return userInfo
+            let user:User? = decode(data: data)
+            
+            client.updateCookies()
+            completionHandler(user)
+        }
     }
     
-    public func logout() -> Bool? {
+    public static func logout(client: APIClient) {
         let url = URL(string: "\(baseUrl)/logout")!
-        let sem = DispatchSemaphore(value: 0)
         
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        
-        request.addValue("auth=\(client.cookies["auth"]! ?? "auth")", forHTTPHeaderField: "Cookie")
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            
-            defer { sem.signal() }
-            
-            do {
-                let json = try JSONSerialization.jsonObject(with: data!, options: []) as? [String : Any]
-                print(json!)
-            } catch let error {
-                print(error.localizedDescription)
-            }
+        client.VRChatRequest(url: url,
+                             httpMethod: "PUT",
+                             auth: true) { data, response, error in
+            guard error == nil else { return }
 
-        }.resume()
-        
-        sem.wait()
-        
-        client.updateCookies()
-        
-        return true
+            client.updateCookies()
+        }
     }
     
-    
-    
-    struct VerifyResponse: Codable {
-        let verified: Bool
-    }
-    
-    public func verify2FAEmail(emailOTP: String) -> Bool? {
-        let url = URL(string: "\(auth2FAUrl)/emailotp/verify")!
-        let sem = DispatchSemaphore(value: 0)
+    public static func verify2FAEmail(client: APIClient, emailOTP: String, completionHandler: @escaping @Sendable (Bool?) -> Void) {
         
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        
-        let emailOTPWrapper = ["code" : emailOTP]
-        
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: emailOTPWrapper, options: .prettyPrinted)
-        } catch let error {
-            print(error.localizedDescription)
+        struct VerifyResponse: Codable {
+            let verified: Bool
         }
         
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        let url = URL(string: "\(auth2FAUrl)/emailotp/verify")!
         
-        var verifyResponse: VerifyResponse?
+        let httpBody: Data?
+        do {
+            httpBody = try JSONSerialization.data(withJSONObject: ["code" : emailOTP], options: .prettyPrinted)
+        } catch let error {
+            print(error.localizedDescription)
+            return
+        }
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        client.VRChatRequest(url: url,
+                             httpMethod: "POST",
+                             auth: true,
+                             contentType: "application/json",
+                             httpBody: httpBody) { data, response, error in
+            guard let data = data, error == nil else { return }
+
+            let verifyResponse:VerifyResponse? = decode(data: data)
             
-            defer { sem.signal() }
-            
-            guard let data = data, error == nil else {
-                return
-            }
-            
-            do {
-                verifyResponse = try JSONDecoder().decode(VerifyResponse.self, from: data)
-            } catch let error {
-                do {
-                    print(error.localizedDescription)
-                    
-                    let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String : Any]
-                    print(json!)
-                } catch let error {
-                    print(error.localizedDescription)
-                }
-            }
-            
-        }.resume()
+            client.updateCookies()
+            completionHandler(verifyResponse?.verified)
+        }
+    }
+}
+
+//
+// MARK: User API
+//
+
+public struct UserAPI {
+    static let userUrl = "\(baseUrl)/users"
+
+    public static func getUser(client: APIClient, userID: String, completionHandler: @escaping @Sendable (User?) -> Void) {
+        let url = URL(string: "\(userUrl)/\(userID)")!
         
-        sem.wait()
-        
-        client.updateCookies()
-        
-        return verifyResponse?.verified
+        client.VRChatRequest(url: url,
+                             httpMethod: "GET",
+                             auth: true,
+                             apiKey: true) { data, response, error in
+            guard let data = data, error == nil else { return }
+
+            let user:User? = decode(data: data)
+            
+            completionHandler(user)
+        }
     }
 }
