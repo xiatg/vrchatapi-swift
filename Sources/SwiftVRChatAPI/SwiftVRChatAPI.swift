@@ -10,28 +10,21 @@ import Foundation
 let domainUrl = "https://api.vrchat.cloud"
 let baseUrl = "https://api.vrchat.cloud/api/1"
 
-public struct Configuration {
-    public var username: String
-    public var password: String
+public class APIClient {
+    public var username: String?
+    public var password: String?
+    public var cookies: [String : String?] = ["auth": nil, "twoFactorAuth": nil, "apiKey": nil]
+
     
     public init(username: String, password: String) {
         self.username = username
         self.password = password
     }
-}
-
-public class APIClient {
-    public var configuration: Configuration
-    public var cookies: [String:String?]
-
-    public init(configuration: Configuration) {
-        self.configuration = configuration
-        self.cookies = ["auth": nil, "twoFactorAuth": nil, "apiKey": nil]
-    }
     
-    public init(configuration: Configuration, auth: String?, twoFactorAuth: String?, apiKey: String?) {
-        self.configuration = configuration
-        self.cookies = ["auth": auth, "twoFactorAuth": twoFactorAuth, "apiKey": apiKey]
+    public init(auth: String?, twoFactorAuth: String?, apiKey: String?) {
+        self.cookies["auth"] = auth
+        self.cookies["twoFactorAuth"] = twoFactorAuth
+        self.cookies["apiKey"] = apiKey
     }
     
     public func updateCookies() {
@@ -91,7 +84,7 @@ public class AuthenticationAPI {
         
         request.addValue("twoFactorAuth=\(client.cookies["twoFactorAuth"]! ?? "twoFactorAuth"); auth=\(client.cookies["auth"]! ?? "auth")", forHTTPHeaderField: "Cookie")
         
-        let authData = (client.configuration.username + ":" + client.configuration.password).data(using: .utf8)!.base64EncodedString()
+        let authData = ((client.username ?? "") + ":" + (client.password ?? "")).data(using: .utf8)!.base64EncodedString()
         request.addValue("Basic \(authData)", forHTTPHeaderField: "Authorization")
         
         var userInfo: UserInfo?
