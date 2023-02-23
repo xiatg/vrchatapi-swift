@@ -57,6 +57,7 @@ public class AuthenticationAPI {
         
         public let id: String?
         public let displayName: String?
+        public let username: String?
         public let userIcon: String?
         public let bio: String?
         public let bioLinks: [String]?
