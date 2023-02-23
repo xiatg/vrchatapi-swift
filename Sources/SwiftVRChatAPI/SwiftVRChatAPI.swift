@@ -27,12 +27,11 @@ public class APIClient {
     public init(configuration: Configuration) {
         self.configuration = configuration
         self.cookies = ["auth": nil, "twoFactorAuth": nil, "apiKey": nil]
-        self.updateCookies()
     }
     
-    public init(configuration: Configuration, auth: String, twoFactorAuth: String) {
+    public init(configuration: Configuration, auth: String?, twoFactorAuth: String?, apiKey: String?) {
         self.configuration = configuration
-        self.cookies = ["auth": auth, "twoFactorAuth": twoFactorAuth, "apiKey": nil]
+        self.cookies = ["auth": auth, "twoFactorAuth": twoFactorAuth, "apiKey": apiKey]
     }
     
     public func updateCookies() {
