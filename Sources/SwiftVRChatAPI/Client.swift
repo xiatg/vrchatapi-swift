@@ -98,26 +98,3 @@ public class APIClient {
         }.resume()
     }
 }
-
-//
-// MARK: User API
-//
-
-public struct UserAPI {
-    static let userUrl = "\(baseUrl)/users"
-
-    public static func getUser(client: APIClient, userID: String, completionHandler: @escaping @Sendable (User?) -> Void) {
-        let url = URL(string: "\(userUrl)/\(userID)")!
-        
-        client.VRChatRequest(url: url,
-                             httpMethod: "GET",
-                             auth: true,
-                             apiKey: true) { data, response, error in
-            guard let data = data, error == nil else { return }
-
-            let user:User? = decode(data: data)
-            
-            completionHandler(user)
-        }
-    }
-}
