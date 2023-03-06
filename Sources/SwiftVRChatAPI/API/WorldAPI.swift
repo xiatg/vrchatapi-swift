@@ -11,7 +11,7 @@ public struct World: Codable {
     public let id: String?
     public let name: String?
     public let description: String?
-    public let featured: Bool
+    public let featured: Bool?
     public let authorId: String?
     public let authorName: String?
     
@@ -60,6 +60,26 @@ public struct WorldAPI {
             let world:World? = decode(data: data)
             
             completionHandler(world)
+        }
+    }
+    
+    public static func searchWorld(client: APIClient,
+//                                    featured: Bool = true,
+//                                    n: Int = 60,
+                                    completionHandler: @escaping @Sendable ([World]?) -> Void) {
+        
+        let url = URL(string: "\(worldUrl)")!
+//        let url = URL(string: "\(avatarUrl)?featured=\(featured)&n=\(n)")!
+        
+        client.VRChatRequest(url: url,
+                             httpMethod: "GET",
+                             auth: true,
+                             apiKey: true) { data, response, error in
+            guard let data = data, error == nil else { return }
+
+            let worlds:[World]? = decode(data: data)
+            
+            completionHandler(worlds)
         }
     }
 }
