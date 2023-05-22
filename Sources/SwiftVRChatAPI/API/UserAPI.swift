@@ -8,7 +8,14 @@
 import Foundation
 
 public struct User: Codable {
+    
     public let requiresTwoFactorAuth: [String]?
+    
+    public struct errorMessage: Codable {
+        public let message: String?
+        public let status_code: Int?
+    }
+    public let error: errorMessage?
     
     public let id: String?
     public let displayName: String?
