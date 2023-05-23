@@ -46,6 +46,26 @@ public struct World: Codable {
 // MARK: World API
 //
 
+@available(iOS 15.0, *)
+public struct WorldAPIAsync {
+    static let worldUrl = "\(baseUrl)/worlds"
+
+    public static func getWorld(client: APIClientAsync, worldID: String) async -> World? {
+        let url = URL(string: "\(worldUrl)/\(worldID)")!
+        
+        let (data, _) = await client.VRChatRequest(url: url,
+                             httpMethod: "GET",
+                             apiKey: true)
+        
+        guard let data = data else { return nil }
+
+        let world:World? = decode(data: data)
+        
+        return world
+    }
+}
+
+
 public struct WorldAPI {
     static let worldUrl = "\(baseUrl)/worlds"
 
