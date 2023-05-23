@@ -49,4 +49,23 @@ public struct AvatarAPI {
             completionHandler(avatars)
         }
     }
+    
+    public static func getFavoritedAvatar(client: APIClient,
+                                    featured: Bool = true,
+                                    n: Int = 60,
+                                    completionHandler: @escaping @Sendable ([Avatar]?) -> Void) {
+        
+        let url = URL(string: "\(avatarUrl)/favorites")!
+        
+        client.VRChatRequest(url: url,
+                             httpMethod: "GET",
+                             auth: true,
+                             apiKey: true) { data, response, error in
+            guard let data = data, error == nil else { return }
+
+            let avatars:[Avatar]? = decode(data: data)
+            
+            completionHandler(avatars)
+        }
+    }
 }

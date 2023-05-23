@@ -102,4 +102,19 @@ public struct WorldAPI {
             completionHandler(worlds)
         }
     }
+    
+    public static func getFavoritedWorld(client: APIClient, completionHandler: @escaping @Sendable ([World]?) -> Void) {
+        let url = URL(string: "\(worldUrl)/favorites")!
+        
+        client.VRChatRequest(url: url,
+                             httpMethod: "GET",
+                             auth: true,
+                             apiKey: true) { data, response, error in
+            guard let data = data, error == nil else { return }
+
+            let worlds:[World]? = decode(data: data)
+            
+            completionHandler(worlds)
+        }
+    }
 }
