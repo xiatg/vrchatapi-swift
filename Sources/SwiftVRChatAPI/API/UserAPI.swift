@@ -66,7 +66,8 @@ public struct UserAPIAsync {
     public static func updateUser(client: APIClientAsync, userID: String,
                                   statusDescription: String? = nil,
                                   tags: [String]? = nil,
-                                  bio: String? = nil) async -> User? {
+                                  bio: String? = nil,
+                                  bioLink: [String]? = nil) async -> User? {
         let url = URL(string: "\(userUrl)/\(userID)")!
         
         var userInfo:[String: Any] = [:]
@@ -81,6 +82,10 @@ public struct UserAPIAsync {
         
         if let bio = bio {
             userInfo["bio"] = bio
+        }
+        
+        if let bioLink = bioLink {
+            userInfo["bioLink"] = bioLink
         }
         
         let httpBody = try! JSONSerialization.data(withJSONObject: userInfo)
