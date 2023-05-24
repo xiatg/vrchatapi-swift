@@ -54,12 +54,40 @@ public struct User: Codable {
     
 }
 
+let userUrl = "\(baseUrl)/users"
+
 //
 // MARK: User API
 //
 
+@available(iOS 15.0, *)
+public struct UserAPIAsync {
+    
+    public static func updateUserTags(client: APIClientAsync, userID: String, tags: [String]) async -> User? {
+        let httpBody = try! JSONSerialization.data(withJSONObject: ["tags": tags])
+        
+        return await updateUser(client: client, userID: userID, httpBody: httpBody)
+    }
+    
+    public static func updateUser(client: APIClientAsync, userID: String, httpBody: Data) async -> User? {
+        let url = URL(string: "\(userUrl)/\(userID)")!
+        
+        let (data, _) = await client.VRChatRequest(url: url,
+                                                   httpMethod: "PUT",
+                                                   auth: true,
+                                                   apiKey: true,
+                                                   contentType: "application/json",
+                                                   httpBody: httpBody)
+        
+        guard let data = data else { return nil }
+        
+        let user:User? = decode(data: data)
+        
+        return user
+    }
+}
+
 public struct UserAPI {
-    static let userUrl = "\(baseUrl)/users"
 
     public static func getUser(client: APIClient, userID: String, completionHandler: @escaping @Sendable (User?) -> Void) {
         let url = URL(string: "\(userUrl)/\(userID)")!

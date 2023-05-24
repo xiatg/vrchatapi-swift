@@ -70,22 +70,14 @@ public class APIClientAsync {
         var cookie = ""
         if auth {
             cookie.append("auth=\(self.auth ?? "auth"); ")
-//            request.addValue("auth=\(self.auth ?? "auth")", forHTTPHeaderField: "Cookie")
         }
         if twoFactorAuth {
             cookie.append("twoFactorAuth=\(self.twoFactorAuth ?? "twoFactorAuth"); ")
-//            request.addValue("twoFactorAuth=\(self.twoFactorAuth ?? "twoFactorAuth")", forHTTPHeaderField: "Cookie")
         }
         if apiKey {
             cookie.append("apiKey=\(self.apiKey ?? "apiKey"); ")
-//            request.addValue("apiKey=\(self.apiKey ?? "apiKey")", forHTTPHeaderField: "Cookie")
         }
         request.addValue(cookie, forHTTPHeaderField: "Cookie")
-        
-        //Debug
-//        print("*** VRChatRequest() ***")
-//        print(request.allHTTPHeaderFields)
-        //Debug End
         
         /// HTTP Body
         if let contentType = contentType, let httpBody = httpBody {
