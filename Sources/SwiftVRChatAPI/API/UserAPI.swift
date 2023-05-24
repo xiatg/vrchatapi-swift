@@ -63,14 +63,27 @@ let userUrl = "\(baseUrl)/users"
 @available(iOS 15.0, *)
 public struct UserAPIAsync {
     
-    public static func updateUserTags(client: APIClientAsync, userID: String, tags: [String]) async -> User? {
-        let httpBody = try! JSONSerialization.data(withJSONObject: ["tags": tags])
-        
-        return await updateUser(client: client, userID: userID, httpBody: httpBody)
-    }
-    
-    public static func updateUser(client: APIClientAsync, userID: String, httpBody: Data) async -> User? {
+    public static func updateUser(client: APIClientAsync, userID: String,
+                                  statusDescription: String? = nil,
+                                  tags: [String]? = nil,
+                                  bio: String? = nil) async -> User? {
         let url = URL(string: "\(userUrl)/\(userID)")!
+        
+        var userInfo:[String: Any] = [:]
+        
+        if let statusDescription = statusDescription {
+            userInfo["statusDescription"] = statusDescription
+        }
+        
+        if let tags = tags {
+            userInfo["tags"] = tags
+        }
+        
+        if let bio = bio {
+            userInfo["bio"] = bio
+        }
+        
+        let httpBody = try! JSONSerialization.data(withJSONObject: userInfo)
         
         let (data, _) = await client.VRChatRequest(url: url,
                                                    httpMethod: "PUT",
