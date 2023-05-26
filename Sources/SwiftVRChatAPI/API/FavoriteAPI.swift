@@ -33,8 +33,11 @@ let favoriteUrl = "\(baseUrl)/favorites"
 @available(iOS 15.0, *)
 public struct FavoriteAPIAsync {
 
-    public static func getFavorites(client: APIClientAsync) async -> [Favorite]? {
-        let url = URL(string: "\(favoriteUrl)")!
+    public static func getFavorites(client: APIClientAsync, n: Int = 60) async -> [Favorite]? {
+        
+        let urlRaw = "\(favoriteUrl)?n=\(n)"
+        
+        let url = URL(string: urlRaw)!
         
         let (data, _) = await client.VRChatRequest(url: url,
                              httpMethod: "GET",
@@ -111,8 +114,11 @@ public struct FavoriteAPIAsync {
 
 public struct FavoriteAPI {
 
-    public static func getFavorites(client: APIClient, completionHandler: @escaping @Sendable ([Favorite]?) -> Void) {
-        let url = URL(string: "\(favoriteUrl)")!
+    public static func getFavorites(client: APIClient, n: Int = 60, completionHandler: @escaping @Sendable ([Favorite]?) -> Void) {
+        
+        let urlRaw = "\(favoriteUrl)?n=\(n)"
+        
+        let url = URL(string: urlRaw)!
         
         client.VRChatRequest(url: url,
                              httpMethod: "GET",
