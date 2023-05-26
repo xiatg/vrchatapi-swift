@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  InstanceAPI.swift
 //  
 //
 //  Created by 夏同光 on 2/24/23.
@@ -40,6 +40,7 @@ public struct Instance: Codable {
 //
 
 public struct InstanceAPI {
+    
     static let instanceUrl = "\(baseUrl)/instances"
 
     public static func getInstance(client: APIClient, worldID: String, instanceID: String, completionHandler: @escaping @Sendable (Instance?) -> Void) {

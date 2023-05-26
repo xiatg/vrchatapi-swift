@@ -46,9 +46,10 @@ public struct World: Codable {
 // MARK: World API
 //
 
+let worldUrl = "\(baseUrl)/worlds"
+
 @available(iOS 15.0, *)
 public struct WorldAPIAsync {
-    static let worldUrl = "\(baseUrl)/worlds"
 
     public static func getWorld(client: APIClientAsync, worldID: String) async -> World? {
         let url = URL(string: "\(worldUrl)/\(worldID)")!
@@ -67,7 +68,6 @@ public struct WorldAPIAsync {
 
 
 public struct WorldAPI {
-    static let worldUrl = "\(baseUrl)/worlds"
 
     public static func getWorld(client: APIClient, worldID: String, completionHandler: @escaping @Sendable (World?) -> Void) {
         let url = URL(string: "\(worldUrl)/\(worldID)")!
