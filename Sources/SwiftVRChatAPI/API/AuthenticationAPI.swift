@@ -66,6 +66,33 @@ public struct AuthenticationAPIAsync {
         
     }
     
+    public static func verify2FATOTP(client: APIClientAsync, TOTP: String) async -> Bool? {
+        let url = URL(string: "\(auth2FAUrl)/totp/verify")!
+        
+        let httpBody: Data?
+        do {
+            httpBody = try JSONSerialization.data(withJSONObject: ["code" : TOTP], options: .prettyPrinted)
+        } catch let error {
+            print(error.localizedDescription)
+            return nil
+        }
+        
+        let (data, _) = await client.VRChatRequest(url: url,
+                             httpMethod: "POST",
+                             auth: true,
+                             contentType: "application/json",
+                             httpBody: httpBody)
+        
+        guard let data = data else { return nil }
+
+        let verifyResponse:VerifyResponse? = decode(data: data)
+        
+        client.updateCookies()
+        
+        return verifyResponse?.verified
+        
+    }
+    
     public static func logout(client: APIClientAsync) async {
         let url = URL(string: "\(baseUrl)/logout")!
         
