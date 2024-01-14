@@ -11,6 +11,7 @@ import Foundation
 // MARK: API Client
 //
 
+@available(macOS 12.0, *)
 @available(iOS 15.0, *)
 public class APIClientAsync {
     private var username: String?

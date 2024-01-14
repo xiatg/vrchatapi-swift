@@ -56,6 +56,7 @@ let userUrl = "\(baseUrl)/users"
 // MARK: User API
 //
 
+@available(macOS 12.0, *)
 @available(iOS 15.0, *)
 public struct UserAPIAsync {
     

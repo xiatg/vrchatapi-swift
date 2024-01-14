@@ -18,6 +18,7 @@ struct VerifyResponse: Codable {
     let verified: Bool
 }
 
+@available(macOS 12.0, *)
 @available(iOS 15.0, *)
 public struct AuthenticationAPIAsync {
     
